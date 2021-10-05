@@ -1,25 +1,20 @@
 package main
 
 import (
-	"encoding/json"
+	"bufio"
 	"fmt"
 	"log"
 	"net"
 	"net/http"
-	"tcp/server/Entities"
+	"os"
 )
 
-func makeJson()  {
+func makeJson() {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		fmt.Fprint(w, `{"message": "OK"}`)
 		return
 	})
-}
-
-type XJapan struct {
-	Members int `json:"members"`
-	Songs  string `json:"songs"`
 }
 
 func main() {
@@ -29,39 +24,40 @@ func main() {
 		log.Fatal("tcp://127.0.0.1:8888に接続できませんでした")
 	}
 
+	// connからレスポンスを標準出力にだす
 	defer conn.Close()
-
-	user := Entities.User{
-		UserId: 13,
-		UserName: "菊池",
-		UserRank: 78,
-	}
-
-	fmt.Println(user)
-
-	json_data, err := json.Marshal(user)
-
-	string_json_data := string(json_data)
-
-	user_accept := new(Entities.User)
-
-	err = json.Unmarshal([]byte(string_json_data), user_accept)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	fmt.Printf("%+v\n", user_accept.UserId)
-
-	fmt.Println(string_json_data)
-
-	conn.Write(json_data)
-
-	fmt.Println("メッセージを送信")
-
-	if err != nil {
-		fmt.Println(err.Error())
-		return
-	}
+	sendMessage(conn)
+	//user := Entities.User{
+	//	UserId: 13,
+	//	UserName: "菊池",
+	//	UserRank: 78,
+	//}
+	//
+	//fmt.Println(user)
+	//
+	//json_data, err := json.Marshal(user)
+	//
+	//string_json_data := string(json_data)
+	//
+	//user_accept := new(Entities.User)
+	//
+	//err = json.Unmarshal([]byte(string_json_data), user_accept)
+	//if err != nil {
+	//	log.Fatal(err)
+	//}
+	//
+	//fmt.Printf("%+v\n", user_accept.UserId)
+	//
+	//fmt.Println(string_json_data)
+	//
+	//conn.Write(json_data)
+	//
+	//fmt.Println("メッセージを送信")
+	//
+	//if err != nil {
+	//	fmt.Println(err.Error())
+	//	return
+	//}
 
 	//for  {
 	//	// メッセージを受信する
@@ -103,4 +99,31 @@ func main() {
 	//		break
 	//	}
 	//}
+}
+
+func sendMessage(connection net.Conn) {
+	fmt.Print("> ")
+
+	stdin := bufio.NewScanner(os.Stdin)
+	if stdin.Scan() == false {
+		fmt.Println("Ciao ciao!")
+		return
+	}
+
+	_, error := connection.Write([]byte(stdin.Text()))
+
+	if error != nil {
+		panic(error)
+	}
+
+	var response = make([]byte, 4*1024)
+	_, error = connection.Read(response)
+
+	if error != nil {
+		panic(error)
+	}
+
+	fmt.Printf("Server> %s \n", response)
+
+	sendMessage(connection)
 }
